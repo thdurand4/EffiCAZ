@@ -1,2 +1,2 @@
 # virulor
-Annotation of virulence factor of fungi (Effector , Cazyme ...)
+Annotation of pathogenicity factor of fungi (Effector , Cazyme ...)
