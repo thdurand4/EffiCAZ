@@ -1,0 +1,95 @@
+__default__:
+    cpus-per-task : 4
+    mem-per-cpu : 10G
+    partition : long
+    output : 'slurm_logs/stdout/{rule}/{wildcards}.o'
+    error : 'slurm_logs/error/{rule}/{wildcards}.e'
+    job-name : '{rule}.{wildcards}'
+
+
+rename_protein: 
+    cpus-per-task: 1
+    partition: fast
+    
+phobius:
+    cpus-per-task: 5
+    mem-per-cpu: 10G
+    partition: fast
+
+signalP:
+    cpus-per-task: 10
+    mem-per-cpu: 10G
+    partition: fast
+
+targetp:
+    cpus-per-task: 10
+    mem-per-cpu: 10G
+    partition: fast   
+
+predgpi:
+    cpus-per-task: 10
+    mem-per-cpu: 10G
+    partition: fast
+    
+parse_phobius:
+    cpus-per-task: 1
+    partition: fast       
+
+parse_signalp:
+    cpus-per-task: 1
+    partition: fast
+
+parse_targetp:
+    cpus-per-task: 1
+    partition: fast 
+    
+parse_predgpi:
+    cpus-per-task: 1
+    partition: fast   
+    
+intersect_tools:
+    cpus-per-task: 1
+    partition: fast  
+    
+fasta_intersect:
+    cpus-per-task: 1
+    partition: fast
+
+tmhmm:
+    cpus-per-task: 5
+    partition: fast
+
+parse_tmhmm:
+    cpus-per-task: 1
+    partition: fast
+
+tmhmm_fasta:
+    cpus-per-task: 1
+    partition: fast
+
+wolfpsort:
+    cpus-per-task: 10
+    mem-per-cpu: 10G
+    partition: fast
+
+parse_wolfpsort:
+    cpus-per-task: 1
+    partition: fast
+    
+id_tofasta_secreted:
+    cpus-per-task: 1
+    partition: fast
+    
+hmmer_pfam:
+    cpus-per-task: 8
+    mem-per-cpu: 5G
+    partition: fast
+
+effectorP:
+    cpus-per-task: 10
+    mem-per-cpu: 10G
+    partition: fast
+    
+count_effector:
+    cpus-per-task: 1
+    partition: fast
