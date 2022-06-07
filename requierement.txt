@@ -2,7 +2,7 @@ TargetP 2.0 : https://services.healthtech.dtu.dk/cgi-bin/sw_request
 Phobius : https://software.sbc.su.se/cgi-bin/request.cgi?project=phobius
 SignalP6 : https://services.healthtech.dtu.dk/service.php?SignalP-5.0 or in IFB cluster module 
 PredGPI : https://github.com/BolognaBiocomp/predgpi 
-TargetP 3.0 : https://github.com/JanaSperschneider/EffectorP-3.0
+EffectorP 3.0 : https://github.com/JanaSperschneider/EffectorP-3.0
 
 Python  version = 3.9
 Java jdk >= 8.0 
