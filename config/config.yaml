@@ -1,0 +1,13 @@
+DATA:
+    PROTEIN: "/shared/home/tdurand/annotation_fijiensism2/workflow_effectors/fasta_prot/"
+    OUTPUT: "/shared/home/tdurand/annotation_fijiensism2/workflow_effectors/results/"
+    SCRIPTS: "/shared/home/tdurand/annotation_fijiensism2/workflow_effectors/scripts/"
+    BDD_PFAM: "/shared/home/tdurand/annotation_fijiensism2/workflow_effectors/BDD_PFAM/Pfam-A.hmm"
+    GFF: "/shared/home/tdurand/annotation_fijiensism2/workflow_effectors/GFF3_protein/"
+
+TOOLS_PARAMS:
+    PARSE_TARGETP_TRESHOLD: "0.8"
+    PARSE_SIGNALP_TRESHOLD: "0.8"
+    PARSE_TMHMM_TRESHOLD: "1"
+    PARSE_WOLFPOSORT_TRESHOLD: "14"
+    HMMER: "--cpu 8 -E 0.003"
