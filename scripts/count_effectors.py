@@ -36,9 +36,9 @@ def main(gff, output, fasta_file):
         for lignes in f1:
                 ligne = lignes.rstrip("\n")
                 col = ligne.split("\t")
-                if col[2] == "gene":
-                    id_1 = re.sub("ID=", "", col[8])
-                    id_2 = re.sub(";Name=\w+", "", id_1)
+                id_1 = re.sub("ID=", "", col[8])
+                id_2 = re.sub(";Name=\w+", "", id_1)
+                if col[2] =="gene":
                     gff_parse.append(col[0]+" "+col[1]+" "+col[2]+" "+id_2)
                     dico_gff[col[0]].append(id_2)
 

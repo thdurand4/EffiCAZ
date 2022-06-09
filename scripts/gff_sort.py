@@ -22,10 +22,10 @@ def main(gff, output, strain_name):
     with open(gff, "r") as f1:
         for lignes in f1:
             col = lignes.split("\t")
-            id_strain = re.sub("ID=","ID="+strain_name+"_",col[8])
-            prot_gff = re.sub(";","T0;",id_strain)
-            prot_gff = re.sub("T0T0", "T0", prot_gff)
-            gene_gff.append(col[0]+"\t"+col[1]+"\t"+col[2]+"\t"+col[3]+"\t"+col[4]+"\t"+col[5]+"\t"+col[6]+"\t"+col[7]+"\t"+prot_gff)
+            if re.search("gene",col[2]):
+                id_strain = re.sub("ID=","ID="+strain_name+"_",col[8])
+                prot_gff = re.sub(";","T0;",id_strain)
+                gene_gff.append(col[0]+"\t"+col[1]+"\t"+col[2]+"\t"+col[3]+"\t"+col[4]+"\t"+col[5]+"\t"+col[6]+"\t"+col[7]+"\t"+prot_gff)
 
     output_file = open(output,"w")
     for elem in gene_gff:
