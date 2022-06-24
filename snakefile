@@ -6,6 +6,7 @@ log_dir = f"{output_dir}LOGS/"
 script_dir = config["DATA"]["SCRIPTS"]
 gff_dir = config["DATA"]["GFF"]
 dbcan_db = config["DATA"]["DBCAN_DB"]
+phibase_db = config["DATA"]["BDD_PHIBASE"]
 
 PROTEIN, = glob_wildcards(fasta_prot_dir+"{samples}.fasta", followlinks=True)
 
@@ -33,14 +34,14 @@ def get_threads(rule, default):
 
 rule finale:
     input:
-        domain_prot=expand(f"{output_dir}3_HMMER_PFAM/{{samples}}_secreted.tbl",samples=PROTEIN),
-        effector_contig=expand(f"{output_dir}5_FINAL_RESULT/EFFECTOR/{{samples}}/{{samples}}_effector_per_contig.txt",samples=PROTEIN),
-        cazyme_counts_list=expand(f"{output_dir}6_CAZYMES/dbcan_{{samples}}/{{samples}}_cazyme_count.csv",samples=PROTEIN),
-        orthogroups_sequences=expand(f"{output_dir}7_ORTHOFINDER/Results_orthofinder/sequences_specific/prot_specific_{{samples}}.fasta",samples=PROTEIN),
-        csv_orthogroups=expand(f"{output_dir}7_ORTHOFINDER/Results_orthofinder/sequences_specific/OG_specific_{{samples}}.csv",samples=PROTEIN),
-        dbcan_list=expand(f"{output_dir}6_CAZYMES/dbcan_{{samples}}/overview.txt",samples=PROTEIN),
-        interpro_gff_list=expand(f"{output_dir}8_INTERPROSCAN/{{samples}}/{{samples}}.fasta.gff3",samples=PROTEIN),
-        blast_phibase=expand(f"{output_dir}9_PHIBASE/{{samples}}/{{samples}}_blast_phibase.out",samples=PROTEIN)
+        domain_prot = expand(f"{output_dir}3_HMMER_PFAM/{{samples}}_secreted.tbl", samples = PROTEIN),
+        effector_contig = expand(f"{output_dir}5_FINAL_RESULT/EFFECTOR/{{samples}}/{{samples}}_effector_per_contig.txt", samples = PROTEIN),
+        cazyme_counts_list = expand(f"{output_dir}6_CAZYMES/dbcan_{{samples}}/{{samples}}_cazyme_count.csv",samples=PROTEIN),
+        orthogroups_sequences = expand(f"{output_dir}7_ORTHOFINDER/Results_orthofinder/sequences_specific/prot_specific_{{samples}}.fasta",samples=PROTEIN),
+        csv_orthogroups = expand(f"{output_dir}7_ORTHOFINDER/Results_orthofinder/sequences_specific/OG_specific_{{samples}}.csv",samples=PROTEIN),
+        dbcan_list = expand(f"{output_dir}6_CAZYMES/dbcan_{{samples}}/overview.txt", samples = PROTEIN),
+        interpro_gff_list = expand(f"{output_dir}8_INTERPROSCAN/{{samples}}/{{samples}}.fasta.gff3", samples = PROTEIN),
+        blast_phibase = expand(f"{output_dir}9_PHIBASE/{{samples}}/{{samples}}_blast_phibase.out", samples = PROTEIN)
         #gff_cazymes_list = expand(f"{output_dir}GFF_with_cazymes/{{samples}}_gff.csv",samples=PROTEIN)
 
 
@@ -850,4 +851,5 @@ rule phibase:
     envmodules:
         "blast"
     shell:
-        "blastp -db {input.phibase_database} -query {input.fasta_effectors} -outfmt 6 -out {output.blast_result}"
+        "blastp -db {input.phibase_database} -query {input.fasta_effectors} -out {output.blast_result} -outfmt '6 qacc sacc length evalue score title' -evalue 0.001"
+
