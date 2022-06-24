@@ -5,6 +5,7 @@ output_dir = config["DATA"]["OUTPUT"]
 log_dir = f"{output_dir}LOGS/"
 script_dir = config["DATA"]["SCRIPTS"]
 gff_dir = config["DATA"]["GFF"]
+dbcan_db = config["DATA"]["DBCAN_DB"]
 
 PROTEIN, = glob_wildcards(fasta_prot_dir+"{samples}.fasta", followlinks=True)
 
@@ -32,8 +33,15 @@ def get_threads(rule, default):
 
 rule finale:
     input:
-        domain_prot = expand(f"{output_dir}3_HMMER_PFAM/{{samples}}_secreted.tbl", samples = PROTEIN),
-        effector_contig = expand(f"{output_dir}5_FINAL_RESULT/EFFECTOR/{{samples}}/{{samples}}_effector_per_contig.txt", samples = PROTEIN)
+        domain_prot=expand(f"{output_dir}3_HMMER_PFAM/{{samples}}_secreted.tbl",samples=PROTEIN),
+        effector_contig=expand(f"{output_dir}5_FINAL_RESULT/EFFECTOR/{{samples}}/{{samples}}_effector_per_contig.txt",samples=PROTEIN),
+        cazyme_counts_list=expand(f"{output_dir}6_CAZYMES/dbcan_{{samples}}/{{samples}}_cazyme_count.csv",samples=PROTEIN),
+        orthogroups_sequences=expand(f"{output_dir}7_ORTHOFINDER/Results_orthofinder/sequences_specific/prot_specific_{{samples}}.fasta",samples=PROTEIN),
+        csv_orthogroups=expand(f"{output_dir}7_ORTHOFINDER/Results_orthofinder/sequences_specific/OG_specific_{{samples}}.csv",samples=PROTEIN),
+        dbcan_list=expand(f"{output_dir}6_CAZYMES/dbcan_{{samples}}/overview.txt",samples=PROTEIN),
+        interpro_gff_list=expand(f"{output_dir}8_INTERPROSCAN/{{samples}}/{{samples}}.fasta.gff3",samples=PROTEIN),
+        blast_phibase=expand(f"{output_dir}9_PHIBASE/{{samples}}/{{samples}}_blast_phibase.out",samples=PROTEIN)
+        #gff_cazymes_list = expand(f"{output_dir}GFF_with_cazymes/{{samples}}_gff.csv",samples=PROTEIN)
 
 
 rule rename_protein:
@@ -618,3 +626,228 @@ rule count_effector:
         python {script_dir}count_effectors.py -g {input.gff_protein} -o {output.effector_per_contig} -fasta {input.fasta_effectors} 1>{log.output} 2>{log.error}
         sort -V {output.effector_per_contig} -o {output.effector_per_contig}
         """
+
+rule dbcan2:
+    threads: get_threads("dbcan2", 2)
+    input:
+        fasta_proteins = rules.rename_protein.output.sorted_protein
+    params:
+        dbcan_dir = f"{output_dir}6_CAZYMES/dbcan_{{samples}}/",
+        database_dir = dbcan_db
+    output:
+        dbcan_result = f"{output_dir}6_CAZYMES/dbcan_{{samples}}/overview.txt"
+    log :
+        error = f'{log_dir}dbcan/{{samples}}.e',
+        output = f'{log_dir}dbcan/{{samples}}.o'
+    message:
+        f"""
+                 Running {{rule}}
+                    Input:
+                        - prot : {{input.fasta_proteins}}
+                    Output:
+                        - result: {{output.dbcan_result}}
+                    Others
+                        - Threads : {{threads}}
+                        - LOG error: {{log.error}}
+                        - LOG output: {{log.output}}
+                """
+    envmodules:
+        "run-dbcan/2.0.11"
+    shell:
+        "run_dbcan.py {input.fasta_proteins} protein --out_dir {params.dbcan_dir} --db_dir {params.database_dir} 1>{log.output} 2>{log.error}"
+
+
+rule cazyme_count:
+    threads: get_threads("cazyme_count", 1)
+    input:
+        dbcan_file = rules.dbcan2.output.dbcan_result,
+        gff_renamed = rules.sort_gff.output.gff_sorted
+    output:
+        cazyme_count = f"{output_dir}6_CAZYMES/dbcan_{{samples}}/{{samples}}_cazyme_count.csv"
+    log:
+        error=f'{log_dir}caz_count/{{samples}}.e',
+        output=f'{log_dir}caz_count/{{samples}}.o'
+    message:
+        f"""
+                     Running {{rule}}
+                        Input:
+                            - dbcan_file : {{input.dbcan_file}}
+                        Output:
+                            - cazyme_count: {{output.cazyme_count}}
+                        Others
+                            - Threads : {{threads}}
+                            - LOG error: {{log.error}}
+                            - LOG output: {{log.output}}
+                    """
+    shell: f"python {script_dir}dbcan.py -i {{input.dbcan_file}} -g {{input.gff_renamed}} -o {{output.cazyme_count}} 1>{{log.output}} 2>{{log.error}}"
+
+'''
+rule add_caz_to_gff:
+    threads: get_threads("add_caz_to_gff", 1)
+    input:
+        dbcan_file = rules.dbcan2.output.dbcan_result,
+        gff_renamed = rules.rename_id_gff.output.gff_renamed
+    output:
+        gff_caz = f"{output_dir}GFF_with_cazymes/{{samples}}_gff.csv"
+    log:
+        error=f'{log_dir}caz_gff/{{samples}}.e',
+        output=f'{log_dir}caz_gff/{{samples}}.o'
+    message:
+        f"""
+                         Running {{rule}}
+                            Input:
+                                - dbcan_file : {{input.dbcan_file}}
+                            Output:
+                                - gff: {{output.gff_caz}}
+                            Others
+                                - Threads : {{threads}}
+                                - LOG error: {{log.error}}
+                                - LOG output: {{log.output}}
+                        """
+    shell: "python cazymes_add_gff.py -i {input.dbcan_file} -g {input.gff_renamed} -o {output.gff_caz}"
+'''
+
+rule orthofinder:
+    threads: get_threads("orthofinder", 10)
+    input:
+        prot_files = expand(f"{output_dir}1_PROTEIN_SORTED/{{samples}}.fasta", samples = PROTEIN)
+    params:
+        dir_prot = f"{output_dir}1_PROTEIN_SORTED/",
+        dir_out = f"{output_dir}7_ORTHOFINDER/",
+        name_dir = "orthofinder"
+    output:
+        orthogroups_file = f"{output_dir}7_ORTHOFINDER/Results_orthofinder/Orthogroups/Orthogroups.txt",
+        orthogroups_table= f"{output_dir}7_ORTHOFINDER/Results_orthofinder/Orthogroups/Orthogroups.GeneCount.tsv"
+    log:
+        error=f'{log_dir}orthofinder/orthofinder.e',
+        output=f'{log_dir}orthofinder/orthofinder.o'
+    message:
+        f"""
+                         Running {{rule}}
+                            Input:
+                                - prot_files : {{input.prot_files}}
+                            Output:
+                                - orthogroups: {{output.orthogroups_file}}
+                            Others
+                                - Threads : {{threads}}
+                                - LOG error: {{log.error}}
+                                - LOG output: {{log.output}}
+                        """
+    envmodules:
+        "orthofinder/2.5.2"
+    shell:
+        """
+        rm -rf {output_dir}7_ORTHOFINDER/
+        orthofinder -o {params.dir_out} -n {params.name_dir} -f {params.dir_prot} -t 10 -M msa -a 10 1>{log.output} 2>{log.error}
+        """
+
+rule orthofinder_parse:
+    threads: get_threads("orthofinder_parse", 1)
+    input:
+        orthogroups_table= f"{output_dir}7_ORTHOFINDER/Results_orthofinder/Orthogroups/Orthogroups.GeneCount.tsv"
+    params:
+        strain_name = f"{{samples}}",
+        path_seq = f"{output_dir}7_ORTHOFINDER/Results_orthofinder/Orthogroup_Sequences/"
+    output:
+        fasta_og = f"{output_dir}7_ORTHOFINDER/Results_orthofinder/sequences_specific/prot_specific_{{samples}}.fasta",
+        csv_orthogroups_specific = f"{output_dir}7_ORTHOFINDER/Results_orthofinder/sequences_specific/OG_specific_{{samples}}.csv"
+    log:
+        error=f'{log_dir}orthofinder_parse/{{samples}}.e',
+        output=f'{log_dir}orthofinder_parse/{{samples}}.o'
+    message:
+        f"""
+                             Running {{rule}}
+                                Input:
+                                    - orthogroups_table : {{input.orthogroups_table}}
+                                Output:
+                                    - fasta: {{output.fasta_og}}
+                                Others
+                                    - Threads : {{threads}}
+                                    - LOG error: {{log.error}}
+                                    - LOG output: {{log.output}}
+                            """
+    shell:
+        f"python {script_dir}orthofinder_parse.py -t {{input.orthogroups_table}} -n {{params.strain_name}} -p {{params.path_seq}} -f {{output.fasta_og}} -c {{output.csv_orthogroups_specific}} 1>{{log.output}} 2>{{log.error}}"
+
+rule interproscan:
+    threads: get_threads("interproscan", 4)
+    input:
+        fasta_proteins = rules.rename_protein.output.sorted_protein
+    params:
+        directory_output = f"{output_dir}8_INTERPROSCAN/{{samples}}/",
+        interpro_params = config["TOOLS_PARAMS"]["INTERPROSCAN"]
+    output:
+        gff = f"{output_dir}8_INTERPROSCAN/{{samples}}/{{samples}}.fasta.gff3"
+    log:
+        error=f'{log_dir}interproscan/{{samples}}.e',
+        output=f'{log_dir}interproscan/{{samples}}.o'
+    message:
+        f"""
+                                 Running {{rule}}
+                                    Input:
+                                        - fasta_proteins : {{input.fasta_proteins}}
+                                    Output:
+                                        - gff: {{output.gff}}
+                                    Others
+                                        - Threads : {{threads}}
+                                        - LOG error: {{log.error}}
+                                        - LOG output: {{log.output}}
+                                """
+    envmodules:
+        "interproscan/5.54-87.0"
+    shell:
+        "interproscan.sh -i {input.fasta_proteins} -d {params.directory_output} {params.interpro_params} 1>{log.output} 2>{log.error}"
+
+rule makeblast_db_phibase:
+    threads: get_threads("makeblast_db_phibase", 1)
+    input:
+        phibase_database = f"{phibase_db}phi-base_current.fasta"
+    output:
+        complete_database = f"{phibase_db}phi-base_current.fasta.phr"
+    log:
+        error=f'{log_dir}phi_base_db.e',
+        output=f'{log_dir}phi_base_db.o'
+    message:
+        f"""
+                                     Running {{rule}}
+                                        Input:
+                                            - database : {{input.phibase_database}}
+                                        Output:
+                                            - complete_database: {{output.complete_database}}
+                                        Others
+                                            - Threads : {{threads}}
+                                            - LOG error: {{log.error}}
+                                            - LOG output: {{log.output}}
+                                    """
+    envmodules:
+        "blast"
+    shell:
+        "makeblastdb -in {input.phibase_database} -dbtype prot 1>{log.output} 2>{log.error}"
+
+rule phibase:
+    threads: get_threads("phibase", 4)
+    input:
+        fasta_effectors = rules.effectorP.output.fasta_effectors,
+        phibase_database = f"{phibase_db}phi-base_current.fasta",
+        verif = rules.makeblast_db_phibase.output.complete_database
+    output:
+        blast_result = f"{output_dir}9_PHIBASE/{{samples}}/{{samples}}_blast_phibase.out"
+    log:
+        error=f'{log_dir}phi_base/{{samples}}.e',
+        output=f'{log_dir}phi_base/{{samples}}.o'
+    message:
+        f"""
+                                         Running {{rule}}
+                                            Input:
+                                                - database : {{input.phibase_database}}
+                                            Output:
+                                                - blast_results: {{output.blast_result}}
+                                            Others
+                                                - Threads : {{threads}}
+                                                - LOG error: {{log.error}}
+                                                - LOG output: {{log.output}}
+                                        """
+    envmodules:
+        "blast"
+    shell:
+        "blastp -db {input.phibase_database} -query {input.fasta_effectors} -outfmt 6 -out {output.blast_result}"
