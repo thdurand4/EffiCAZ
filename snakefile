@@ -711,7 +711,7 @@ rule add_caz_to_gff:
 rule orthofinder:
     threads: get_threads("orthofinder", 10)
     input:
-        prot_files = expand(f"{output_dir}1_PROTEIN_SORTED/{{samples}}.fasta", samples = PROTEIN)
+        prot_files = expand(rules.rename_protein.output.sorted_protein, samples = PROTEIN)
     params:
         dir_prot = f"{output_dir}1_PROTEIN_SORTED/",
         dir_out = f"{output_dir}7_ORTHOFINDER/",
@@ -745,7 +745,7 @@ rule orthofinder:
 rule orthofinder_parse:
     threads: get_threads("orthofinder_parse", 1)
     input:
-        orthogroups_table= f"{output_dir}7_ORTHOFINDER/Results_orthofinder/Orthogroups/Orthogroups.GeneCount.tsv"
+        orthogroups_table= rules.orthofinder.output.orthogroups_table
     params:
         strain_name = f"{{samples}}",
         path_seq = f"{output_dir}7_ORTHOFINDER/Results_orthofinder/Orthogroup_Sequences/"
