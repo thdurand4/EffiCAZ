@@ -93,3 +93,35 @@ effectorP:
 count_effector:
     cpus-per-task: 1
     partition: fast
+    
+dbcan2:
+    cpus-per-task: 2
+    partition: fast
+    
+cazyme_count:
+    cpus-per-task: 1
+    partition: fast
+
+orthofinder:
+    cpus-per-task: 10
+    partition: fast
+    
+orthofinder_parse:
+    cpus-per-task: 1
+    partition: fast
+    
+interproscan:
+    cpus-per-task: 4
+    partition: fast
+
+makeblast_db_phibase:
+    cpus-per-task: 1
+    partition: fast
+
+phibase:
+    cpus-per-task: 1
+    partition: fast
+
+parse_hmmer:
+    cpus-per-task: 1
+    partition: fast

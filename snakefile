@@ -41,7 +41,8 @@ rule finale:
         csv_orthogroups = expand(f"{output_dir}7_ORTHOFINDER/Results_orthofinder/sequences_specific/OG_specific_{{samples}}.csv",samples=PROTEIN),
         dbcan_list = expand(f"{output_dir}6_CAZYMES/dbcan_{{samples}}/overview.txt", samples = PROTEIN),
         interpro_gff_list = expand(f"{output_dir}8_INTERPROSCAN/{{samples}}/{{samples}}.fasta.gff3", samples = PROTEIN),
-        blast_phibase = expand(f"{output_dir}9_PHIBASE/{{samples}}/{{samples}}_blast_phibase.out", samples = PROTEIN)
+        blast_phibase = expand(f"{output_dir}9_PHIBASE/{{samples}}/{{samples}}_blast_phibase.out", samples = PROTEIN),
+        hmmer_parsed= expand(f"{output_dir}3_HMMER_PFAM/PARSED_FILE/{{samples}}_parsed.csv",samples=PROTEIN)
         #gff_cazymes_list = expand(f"{output_dir}GFF_with_cazymes/{{samples}}_gff.csv",samples=PROTEIN)
 
 
@@ -540,6 +541,32 @@ rule hmmer_pfam :
         "hmmer/3.2.1"
     shell:
         f"hmmsearch --tblout {{output.protein_secreted_domain}} {{params.param_hmmer}} {{input.bdd_pfam}} {{input.fasta_secreted}} 1>{{log.output}} 2>{{log.error}}"
+
+rule parse_hmmer :
+    threads: get_threads("parse_hmmer",1)
+    input:
+        result_hmmer = rules.hmmer_pfam.output.protein_secreted_domain
+    output:
+        hmmer_parsed = f"{output_dir}3_HMMER_PFAM/PARSED_FILE/{{samples}}_parsed.csv"
+    log:
+        error=f'{log_dir}hmmer_pfam/hmmer_pfam_parsed_{{samples}}.e',
+        output=f'{log_dir}hmmer_pfam/hmmer_pfam_parsed_{{samples}}.o'
+    message:
+        f"""
+                                                    Running {{rule}}
+                                                       Input:
+                                                           - HMMER RESULT : {{input.result_hmmer}}
+                                                       Output:
+                                                           - HMMER PARSED : {{output.hmmer_parsed}}
+                                                       Others
+                                                           - Threads : {{threads}}
+                                                           - LOG error: {{log.error}}
+                                                           - LOG output: {{log.output}}
+
+                                                   """
+    shell:
+        f"python {script_dir}hmmer_parse.py -f {{input.result_hmmer}} -o {{output.hmmer_parsed}} 1>{{log.output}} 2>{{log.error}}"
+
 
 rule effectorP :
     threads: get_threads("effectorP", 10)
